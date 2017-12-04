@@ -1,7 +1,7 @@
 // this file generates all of the different definitions for the robustness checks
 
 cd ${USdir}/rawdata
-use SCF_89_10.dta, clear
+use SCF_89_16.dta, clear
 
 gen labincwork = .
 replace labincwork = labinc if age<=59
@@ -99,7 +99,7 @@ label values agedum l_age
 
 
 cd ${USdir}/cleandata
-save SCF_89_10_cleaned.dta, replace
+save SCF_89_16_cleaned.dta, replace
 
 cd ${USdir}/rawdata
-//!rm SCF_89_10.dta
+//!rm SCF_89_16.dta

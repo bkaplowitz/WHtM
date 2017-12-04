@@ -1,10 +1,17 @@
 
 cd ${USdir}/rawdata/extract
+//OPTION FOR CORE OR HEADLINE CPI
+//set to 1 if you want core, 0 if headline
+local iscorecpi = 0
 
 ////////////////////////////////////////////////////////////////////////////////
 //append extract data together for all of the years and puts the survey year
-use rscfp2010.dta
-gen year = 2010
+use rscfp2016.dta
+gen year = 2016
+append rscfp2013.dta
+replace year = 2013 if year == .
+append rscfp2010.dta
+replace year = 2010 if year == .
 append using rscfp2007.dta
 replace year = 2007 if year == .
 append using rscfp2004.dta
@@ -24,15 +31,19 @@ replace Y1 = X1 if year == 1989
 replace YY1 = XX1 if year == 1989
 
 cd ${USdir}/rawdata
-save SCF_89_10.dta, replace
+save SCF_89_16.dta, replace
 
 clear
 
 //append full data together for all of the years and puts the survey year
 cd ${USdir}/rawdata/full
 //merges full data
-use p2010i6.dta
-gen year = 2010
+use p20216i6.dta
+gen year = 2016
+append using p2013i6.dta
+replace year = 2013 if year == .
+append using p2010i6.dta
+replace year =2010 if year == .
 append using p07i6.dta
 replace year = 2007 if year == .
 append using p04i6.dta
@@ -286,23 +297,41 @@ replace depx = (X108 == 4 | X108 == 13 | X108 == 36) + (X114 == 4 | X114 == 13 |
 + (X132 == 4 | X132 == 13 | X132 == 36) + (X202 == 4 | X202 == 13 | X202 == 36) ///
 + (X208 == 4 | X208 == 13 | X208 == 36) + (X214 == 4 | X214 == 13 | X214 == 36) ///
 + (X220 == 4 | X220 == 13 | X220 == 36) + (X226 == 4 | X226 == 13 | X226 == 36) 
-replace depchild = depxtaxsim9, replacegen taxes_mar_kids = fiitax + fica/2
+replace depchild = depx
+taxsim9, replace
+gen taxes_mar_kids = fiitax + fica/2
 ///////////////////////////////////////////////////////////////////////////////
 
 ///////////////////////////////////////////////////////////////////////////////
-// deflates relevant data into 2010 terms using the CPI-U-RS http://www.bls.gov/cpi/cpiursai1978_2010.pdf
+// deflates relevant data into 2016 dollars using CPI-U-RS https://www.bls.gov/cpi/research-series/allitems.pdf
 //use September values for each year (around when the survey was done)
+//uses all items seasonally adjusted
+if `iscorecpi'==0 { 
 gen CPIADJ = 0
-replace CPIADJ = 320.8/320.8 if year == 2010
-replace CPIADJ = 320.8/306.2 if year == 2007
-replace CPIADJ = 320.8/278.8 if year == 2004
-replace CPIADJ = 320.8/261.8 if year == 2001
-replace CPIADJ = 320.8/240.5 if year == 1998
-replace CPIADJ = 320.8/226.5 if year == 1995
-replace CPIADJ = 320.8/211.6 if year == 1992
-replace CPIADJ = 320.8/190.2 if year == 1989
-
-local z "ccdebt hh_earnings hh_selfy uiben childben tanf ssinc othinc labinc labincplus maxcredit rentpmt homeloanpmt carpmt educloanpmt consloanpmt pensloanpmt supportpmt committed_cons misc_illiq usuallabinc taxes_mar_kids taxes_sing_nokids heloc_lim labearn1 labearn2 selfearn1 selfearn1"
+replace CPIADJ = 354.1/354.1 if year == 2016
+replace CPIADJ = 354.1/343.2 if year == 2013
+replace CPIADJ = 354.1/320.7 if year == 2010
+replace CPIADJ = 354.1/306.4 if year == 2007
+replace CPIADJ = 354.1/278.8 if year == 2004
+replace CPIADJ = 354.1/261.6 if year == 2001
+replace CPIADJ = 354.1/240.2 if year == 1998
+replace CPIADJ = 354.1/226.3 if year == 1995
+replace CPIADJ = 354.1/211.3 if year == 1992
+replace CPIADJ = 354.1/189.8 if year == 1989
+}
+else { 
+gen CPIADJ = 0
+replace CPIADJ = 358.0/358.0 if year == 2016
+replace CPIADJ = 358.0/337.8 if year == 2013
+replace CPIADJ = 358.0/319.2 if year == 2010
+replace CPIADJ = 358.0/304.6 if year == 2007
+replace CPIADJ = 358.0/284.2 if year == 2004
+replace CPIADJ = 358.0/250.7 if year == 1998
+replace CPIADJ = 358.0/234.8 if year == 1995
+replace CPIADJ = 358.0/217.4 if year == 1992
+replace CPIADJ = 358.0/193.9 if year == 1989
+} 
+local z "ccdebt hh_earnings hh_selfy uiben childben tanf ssinc othinc labinc labincplus maxcredit rentpmt homeloanpmt carpmt educloanpmt consloanpmt pensloanpmt supportpmt committed_cons misc_illiq usuallabinc taxes_mar_kids waxes_sing_nokids heloc_lim labearn1 labearn2 selfearn1 selfearn1"
 foreach k of local z{
 replace `k' = `k'*CPIADJ
 }
@@ -335,7 +364,7 @@ destring im0100, replace
 ///////////////////////////////////////////////////////////////////////////////
 
 ///////////////////////////////////////////////////////////////////////////////
-save SCF_89_10.dta, replace
+save SCF_89_16.dta, replace
 
 !rm SCF_extra.dta
 ///////////////////////////////////////////////////////////////////////////////

@@ -1,0 +1,15 @@
+replace varname = "Income (age 22-59)" if varname == "labincwork"
+replace varname = "Net Worth" if varname == "networthnc"
+replace varname = "Net liquid wealth" if varname == "netbrliq"
+replace varname = "Cash, checking, saving, MM accounts" if varname == "liqpos"
+replace varname = "Directly held stocks" if varname == "stocks"
+replace varname = "Directly held bonds" if varname == "bond" | varname == "bonds"
+
+replace varname = "Revolving credit card debt" if varname == "ccdebt"
+replace varname = "Net illiquid wealth" if varname == "netbrilliqnc"
+replace varname = "Housing net of mortgages" if varname == "nethouse"
+replace varname = "Retirement accounts" if varname == "retacc"
+replace varname = "Life insurance" if varname == "cashli"
+replace varname = "Certificates of deposit" if varname == "certdep"
+
+replace varname = "Savings bonds" if varname == "savbnd"

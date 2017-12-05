@@ -1,16 +1,16 @@
-
+//global USdir = "/Users/bkaplowitz-local/Documents/GitHub/WHtM/SCF"
 cd ${USdir}/rawdata/extract
 //OPTION FOR CORE OR HEADLINE CPI
 //set to 1 if you want core, 0 if headline
-local iscorecpi = 0
-
+local iscorecpi = 1
+local includesbusdebt = 0
 ////////////////////////////////////////////////////////////////////////////////
 //append extract data together for all of the years and puts the survey year
 use rscfp2016.dta
 gen year = 2016
-append rscfp2013.dta
+append using rscfp2013.dta
 replace year = 2013 if year == .
-append rscfp2010.dta
+append using rscfp2010.dta
 replace year = 2010 if year == .
 append using rscfp2007.dta
 replace year = 2007 if year == .
@@ -38,11 +38,11 @@ clear
 //append full data together for all of the years and puts the survey year
 cd ${USdir}/rawdata/full
 //merges full data
-use p20216i6.dta
+use p16i6.dta
 gen year = 2016
-append using p2013i6.dta
+append using p13i6.dta
 replace year = 2013 if year == .
-append using p2010i6.dta
+append using p10i6.dta
 replace year =2010 if year == .
 append using p07i6.dta
 replace year = 2007 if year == .
@@ -73,7 +73,7 @@ clear
 // wording of the questions
 
 use year Y1 YY1 X432 X413 X421 X424 X427 X430 X7132 ///
-       X410 X7973 X7976 ///
+       X410 X433 X434 X435 X436 X437 X438 X439 X440 X7973 X7976 ///
 	   X816 ///
        X414 X407 X409 ///
 	   X5702 X5704 X5716 X5718 X5720 X5722 X5724 X5725 ///
@@ -127,18 +127,27 @@ rename X7973 hasmcvisa
 replace hasmcvisa = 1 if X411 > 0 & year <= 1992  // 89 and 92 only ask number of cards
 rename X7976 hasamex
 replace hasamex = 1 if X425 > 0 & year <= 1992 // 89 and 92 only ask number of cards
+//2016 removes question on owning a credit card
+replace hascc=1 if ((hasmcvisa==1 | hasamex==1) & year>=2016)
+//2016 seperates business credit cards from consumer credit cards. If you want bus. credit cards to be included set includesbusdebt=1
+gen revbalancebus=0
+/*if `includesbusdebt'==1 {
+replace hascc =1 if (
+}
+Not implemented yet. Option for business income and business debt*/
 replace hascc=0 if (hascc==5 | (hasmcvisa==5 & hasamex==5))  
 rename X432  payfreq
 rename X413 revbalance1 
 rename X421 revbalance2 
 rename X424 revbalance3 
-replace revbalance3 = 0 if year == 2010 // 2010 absorbed gas station and store cards into X430
+replace revbalance3 = 0 if year >= 2010 // 2010 absorbed gas station and store cards into X421
 rename X427 revbalance4
 rename X430 revbalance5
+replace revbalance5 = 0 if year >=2016 //2016 removed the option for other cards and added business cards
 
 // credit card debt as the sum of all revolving balances on cards
 gen ccdebt=0
-replace ccdebt = (revbalance1+revbalance2+revbalance3+revbalance4+revbalance5)
+replace ccdebt = (revbalance1+revbalance2+revbalance3+revbalance4+revbalance5+revbalancebus)
 
 // credit limit
 rename X414  maxcredit
@@ -242,6 +251,11 @@ gen consloanpmt = X2718*X7527 + X2735*X7526 + X2818*X7525 + X2835*X7524 + X2918*
 + X7184*X7185 if year >= 1995
 replace consloanpmt = X2718 + X2735 + X2818 + X2835 + X2918 + X2935 if year <= 1992
 
+//since 2016 they ask about different types of credit/loans you applied for rather than if you applied for any type of credit or loans
+replace X7131 = 5 if year == 2016
+replace X7131 = 1 if year == 2016 & (X433==1 | X434==1 | X435==1 | X436==1 | X437==1 | X438==1 | X439==1 | X440==1) 
+
+
 gen pensloanpmt = X4011*X4012 
 replace pensloanpmt = pensloanpmt + X11028*X11029 + X11128*X11129 + X11328*X11329 + X11428*X11429 if year >=2004
 replace pensloanpmt = pensloanpmt + X11528*X11529 if year == 2004 | year == 2007
@@ -304,6 +318,7 @@ gen taxes_mar_kids = fiitax + fica/2
 
 ///////////////////////////////////////////////////////////////////////////////
 // deflates relevant data into 2016 dollars using CPI-U-RS https://www.bls.gov/cpi/research-series/allitems.pdf
+//https://www.bls.gov/cpi/research-series/alllessfe.pdf
 //use September values for each year (around when the survey was done)
 //uses all items seasonally adjusted
 if `iscorecpi'==0 { 
@@ -326,12 +341,13 @@ replace CPIADJ = 358.0/337.8 if year == 2013
 replace CPIADJ = 358.0/319.2 if year == 2010
 replace CPIADJ = 358.0/304.6 if year == 2007
 replace CPIADJ = 358.0/284.2 if year == 2004
+replace CPIADJ = 358.0/269.3 if year == 2001
 replace CPIADJ = 358.0/250.7 if year == 1998
 replace CPIADJ = 358.0/234.8 if year == 1995
 replace CPIADJ = 358.0/217.4 if year == 1992
 replace CPIADJ = 358.0/193.9 if year == 1989
 } 
-local z "ccdebt hh_earnings hh_selfy uiben childben tanf ssinc othinc labinc labincplus maxcredit rentpmt homeloanpmt carpmt educloanpmt consloanpmt pensloanpmt supportpmt committed_cons misc_illiq usuallabinc taxes_mar_kids waxes_sing_nokids heloc_lim labearn1 labearn2 selfearn1 selfearn1"
+local z "ccdebt hh_earnings hh_selfy uiben childben tanf ssinc othinc labinc labincplus maxcredit rentpmt homeloanpmt carpmt educloanpmt consloanpmt pensloanpmt supportpmt committed_cons misc_illiq usuallabinc taxes_mar_kids taxes_sing_nokids heloc_lim labearn1 labearn2 selfearn1 selfearn1"
 foreach k of local z{
 replace `k' = `k'*CPIADJ
 }
@@ -339,7 +355,7 @@ replace `k' = `k'*CPIADJ
 
 ///////////////////////////////////////////////////////////////////////////////
 //merges data with the extract data
-merge 1:1 Y1 year using SCF_89_10.dta
+merge 1:1 Y1 year using SCF_89_16.dta
 drop _merge
 ///////////////////////////////////////////////////////////////////////////////
 
